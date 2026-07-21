@@ -35,6 +35,7 @@ import {
   subscribeToCodeActivity,
 } from "@/lib/code-activity";
 import type { TranscriptEntry } from "@/lib/session-types";
+import { showPdfPage } from "@/shapes/pdf-shape";
 
 export type VoiceStatus = "disconnected" | "connecting" | "connected" | "error";
 
@@ -47,6 +48,21 @@ type UseVoiceProfessorOptions = {
 type TokenResponse = {
   value?: string;
   error?: string;
+};
+
+type VisualCompositionRequest = {
+  brief: string;
+  purpose: "explain" | "compare" | "trace" | "illustrate" | "exercise" | "reflect";
+  style:
+    | "technical-sketch"
+    | "scientific-illustration"
+    | "data-graphic"
+    | "spatial-map"
+    | "chalkboard"
+    | "editorial-illustration";
+  aspect: "landscape" | "square" | "portrait";
+  x?: number;
+  y?: number;
 };
 
 function getErrorMessage(error: unknown) {
@@ -80,6 +96,8 @@ THE BOARD
   read_document_pages before making claims about a book or creating exercises from it.
 - When creating exercises from a document, ground them in specific concepts or pages, vary the format,
   and coach the learner without immediately revealing complete solutions.
+- When citing a document, offer to show the source. Use show_document_page to put the exact cited page
+  on screen; never invent a page number or claim a page supports something you have not read.
 - Draw only when a visual genuinely improves the explanation.
 - Never default to dashboards, cards, generic box grids, or repetitive flowcharts.
 - Prefer the visual language that fits the idea: curves, annotated sketches, number lines, plots,
@@ -100,6 +118,14 @@ CODE
 - Create a code cell when code is useful or requested. The learner can edit and run it directly.
 - Update learner code only when asked or when they agree to a concrete change.
 - Run code to test a prediction, then discuss the result verbally.
+
+LEARNING EVIDENCE
+- Do not equate listening, confidence, or completing a lesson with understanding. Look for evidence in the
+  learner's explanations, predictions, corrections, sketches, or code.
+- After a meaningful teaching sequence, briefly ask the learner to explain or predict something in their own words.
+- When the learner asks to wrap up, offer to create a Learning Trace. Only call create_learning_trace after they agree.
+- The trace must name the goal, specific demonstrated evidence, any misconception that changed, and one next challenge.
+- Never claim mastery without evidence. Use language such as "you demonstrated" and "next test" instead.
 `.trim();
 
 export function useVoiceProfessor(options: UseVoiceProfessorOptions) {
@@ -186,6 +212,46 @@ export function useVoiceProfessor(options: UseVoiceProfessorOptions) {
   }, []);
 
   function createProfessorAgent() {
+    async function composeAndRenderVisual(request: VisualCompositionRequest) {
+      const editor = optionsRef.current.editor;
+      if (!editor) return "The board is not ready.";
+      const point =
+        typeof request.x === "number" && typeof request.y === "number"
+          ? { x: request.x, y: request.y }
+          : undefined;
+      const stopThinkingPulse = startThinkingPulse(editor, point);
+      const boardImage = await captureBoard(editor);
+      try {
+        const response = await fetch("/api/visuals/compose", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...request,
+            boardImage,
+            boardObjects: JSON.stringify(serializeBoard(editor).slice(0, 100)),
+            sessionId: getSessionId(),
+          }),
+        });
+        const result = (await response.json()) as {
+          title?: string;
+          svg?: string;
+          beats?: Array<{ label: string; x: number; y: number; gesture: string }>;
+          error?: string;
+        };
+        if (!response.ok || !result.svg) {
+          return result.error ?? "The visual could not be composed.";
+        }
+        const ids = await renderSvgVisual(editor, result.svg, point);
+        return JSON.stringify({
+          title: result.title,
+          shapeIds: ids,
+          teachingBeats: result.beats ?? [],
+        });
+      } finally {
+        stopThinkingPulse();
+      }
+    }
+
     const inspectBoardTool = tool({
       name: "inspect_board",
       description: "Read all current whiteboard objects, text, code, outputs, and page-space bounds.",
@@ -227,6 +293,28 @@ export function useVoiceProfessor(options: UseVoiceProfessorOptions) {
         readLocalPdfPages(documentId, startPage, endPage),
     });
 
+    const showDocumentPageTool = tool({
+      name: "show_document_page",
+      description:
+        "Navigate an existing PDF object to a verified cited page and focus the whiteboard camera on it.",
+      parameters: z.object({
+        documentId: z.string(),
+        page: z.number().int().min(1),
+      }),
+      execute: async ({ documentId, page }) => {
+        const editor = optionsRef.current.editor;
+        if (!editor) return "The board is not ready.";
+        try {
+          const result = await showPdfPage(editor, documentId, page);
+          return result
+            ? JSON.stringify(result)
+            : "That document is in the local library but is not currently on the board.";
+        } catch (pageError) {
+          return getErrorMessage(pageError);
+        }
+      },
+    });
+
     const composeVisualTool = tool({
       name: "compose_visual",
       description:
@@ -247,44 +335,54 @@ export function useVoiceProfessor(options: UseVoiceProfessorOptions) {
         y: z.number().optional(),
       }),
       timeoutMs: 90_000,
-      execute: async ({ brief, purpose, style, aspect, x, y }) => {
-        const editor = optionsRef.current.editor;
-        if (!editor) return "The board is not ready.";
-        const stopThinkingPulse = startThinkingPulse(
-          editor,
-          typeof x === "number" && typeof y === "number" ? { x, y } : undefined,
-        );
-        const boardImage = await captureBoard(editor);
-        try {
-          const response = await fetch("/api/visuals/compose", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              brief,
-              purpose,
-              style,
-              aspect,
-              boardImage,
-              boardObjects: JSON.stringify(serializeBoard(editor).slice(0, 100)),
-              sessionId: getSessionId(),
+      execute: async (request) => composeAndRenderVisual(request),
+    });
+
+    const learningTraceTool = tool({
+      name: "create_learning_trace",
+      description:
+        "Create a visual, evidence-based lesson recap on the board after the learner agrees to wrap up.",
+      parameters: z.object({
+        goal: z.string().min(1).max(240),
+        demonstratedEvidence: z.array(z.string().min(1).max(280)).min(1).max(5),
+        misconceptionChanged: z.string().max(320).optional(),
+        nextChallenge: z.string().min(1).max(320),
+        sourcePages: z
+          .array(
+            z.object({
+              document: z.string().max(160),
+              page: z.number().int().min(1),
             }),
-          });
-          const result = (await response.json()) as {
-            title?: string;
-            svg?: string;
-            beats?: Array<{ label: string; x: number; y: number; gesture: string }>;
-            error?: string;
-          };
-          if (!response.ok || !result.svg) {
-            return result.error ?? "The visual could not be composed.";
-          }
-          const point = typeof x === "number" && typeof y === "number" ? { x, y } : undefined;
-          const ids = await renderSvgVisual(editor, result.svg, point);
-          return JSON.stringify({ title: result.title, shapeIds: ids, teachingBeats: result.beats ?? [] });
-        } finally {
-          stopThinkingPulse();
-        }
-      },
+          )
+          .max(6)
+          .optional(),
+      }),
+      timeoutMs: 90_000,
+      execute: async ({
+        goal,
+        demonstratedEvidence,
+        misconceptionChanged,
+        nextChallenge,
+        sourcePages,
+      }) =>
+        composeAndRenderVisual({
+          purpose: "reflect",
+          style: "editorial-illustration",
+          aspect: "landscape",
+          brief: [
+            "Create a Learning Trace: a warm, rigorous visual record of this learner's progress.",
+            `Learning goal: ${goal}`,
+            `Demonstrated evidence: ${demonstratedEvidence.join(" | ")}`,
+            misconceptionChanged
+              ? `Misconception revised: ${misconceptionChanged}`
+              : "Misconception revised: none observed; do not invent one.",
+            `Next challenge: ${nextChallenge}`,
+            sourcePages?.length
+              ? `Verified sources: ${sourcePages.map((source) => `${source.document}, p. ${source.page}`).join("; ")}`
+              : "Verified sources: none used; do not invent citations.",
+            "Use an expressive path or progression rather than a dashboard. Distinguish observed evidence from the next unproven step. Keep every supplied claim intact and concise.",
+          ].join("\n"),
+        }),
     });
 
     const gestureTool = tool({
@@ -436,7 +534,9 @@ export function useVoiceProfessor(options: UseVoiceProfessorOptions) {
         listDocumentsTool,
         searchDocumentTool,
         readDocumentPagesTool,
+        showDocumentPageTool,
         composeVisualTool,
+        learningTraceTool,
         gestureTool,
         generateImageTool,
         createCodeTool,

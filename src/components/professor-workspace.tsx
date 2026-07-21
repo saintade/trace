@@ -205,6 +205,7 @@ export function ProfessorWorkspace() {
             <li>Help me build an intuition for gradient descent.</li>
             <li>Quiz me from this PDF without giving away the answer.</li>
             <li>Let&apos;s trace this code together and test my prediction.</li>
+            <li>When we finish, make a Learning Trace from what I demonstrate.</li>
           </ul>
           <button
             type="button"

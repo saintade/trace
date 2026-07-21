@@ -19,6 +19,7 @@ Trace makes the whiteboard—not a transcript—the center of the lesson.
 3. Interrupt the professor or draw on the board; it sees the updated canvas on the next turn.
 4. Drop a PDF onto the board and ask for a page-grounded quiz.
 5. Add a code cell, edit it, run it, and ask the professor to explain the result.
+6. Say: “Make my Learning Trace from what I actually demonstrated.”
 
 ## What works
 
@@ -28,6 +29,8 @@ Trace makes the whiteboard—not a transcript—the center of the lesson.
 - Animated pointing, circling, and underlining synchronized with the spoken explanation
 - GPT Image 2 generation for visual references where SVG is the wrong medium
 - Local PDF rendering and text indexing, with tools to list, search, and read bounded page ranges
+- “Show me the source” navigation that opens the exact cited PDF page and focuses it on the board
+- Evidence-based Learning Traces with demonstrated understanding, revised misconceptions, and a next challenge
 - Editable CodeMirror cells that run Python, JavaScript, C17, or C++20 directly on the board
 - Multiple tutoring sessions with isolated boards, local transcript storage, and SQLite FTS5 search
 - Native drag-and-drop for images, SVG, files, URLs, and text
@@ -43,7 +46,7 @@ This repository began as a Create Next App shell before the submission period. T
 - local-first PDF intelligence and session memory
 - sandboxed, in-board multi-language code execution
 - safety identifiers, bounded inputs, SVG sanitization, timeouts, and output caps
-- the onboarding experience, offline-reliable build, CI, architecture docs, and submission materials
+- the onboarding experience, offline-reliable build, architecture docs, and submission materials
 
 The initial commit is the untouched framework scaffold; the Build Week commit history provides a clear before/after boundary for judging.
 
@@ -122,10 +125,11 @@ npm run build
 - **0:00–0:20 — Problem:** chat tutors cannot follow the learner’s spatial work.
 - **0:20–1:05 — Voice + vision:** ask a concept question, draw, interrupt, and show the professor adapting.
 - **1:05–1:40 — Visual teaching:** generate a GPT‑5.6 explanation and show synchronized gestures.
-- **1:40–2:10 — Grounding:** drop a PDF and request a page-specific question.
-- **2:10–2:35 — Active practice:** edit and run an in-board code cell.
-- **2:35–2:55 — Build:** explain Codex, GPT‑5.6 Sol, Realtime, local-first data, and safety boundaries.
-- **2:55–3:00 — Close:** “Trace turns an AI tutor into someone who can actually work beside you.”
+- **1:40–2:08 — Grounding:** drop a PDF, ask a question, then say “show me the source.”
+- **2:08–2:28 — Active practice:** edit and run an in-board code cell.
+- **2:28–2:45 — Evidence:** generate a Learning Trace from what the learner demonstrated.
+- **2:45–2:57 — Build:** name Codex, GPT‑5.6 Sol, Realtime, local-first data, and safety boundaries.
+- **2:57–3:00 — Close:** “Trace turns an AI tutor into someone who can actually work beside you.”
 
 ## Licensing
 

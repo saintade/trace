@@ -31,6 +31,11 @@ TEACHING BEATS
 - Return 2-6 focal beats in the order a professor should discuss them.
 - Each beat uses normalized x/y coordinates from 0 to 1 in the SVG viewBox.
 - Choose circle for a localized object, underline for a label/equation, and point for a precise coordinate.
+
+LEARNING TRACES
+- When purpose is reflect, visualize a journey from goal through demonstrated evidence to the next challenge.
+- Make observed evidence visually distinct from claims that remain to be tested.
+- Preserve supplied source page numbers exactly. Never invent mastery, evidence, misconceptions, or citations.
 `.trim();
 
 type RequestBody = {

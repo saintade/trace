@@ -71,6 +71,30 @@ export function createPdfShape(
   return id;
 }
 
+export async function showPdfPage(editor: Editor, documentId: string, page: number) {
+  const shape = editor
+    .getCurrentPageShapes()
+    .find(
+      (candidate): candidate is PdfShape =>
+        candidate.type === PDF_SHAPE_TYPE && candidate.props.documentId === documentId,
+    );
+  if (!shape) return null;
+
+  const nextPage = Math.max(1, Math.min(page, shape.props.pageCount));
+  const preview = await renderLocalPdfPage(documentId, nextPage);
+  editor.updateShape<PdfShape>({
+    id: shape.id,
+    type: shape.type,
+    props: { page: nextPage, preview: preview.dataUrl, error: "" },
+  });
+  editor.select(shape.id);
+  const bounds = editor.getShapePageBounds(shape);
+  if (bounds) {
+    editor.zoomToBounds(bounds, { inset: 64, animation: { duration: 480 } });
+  }
+  return { shapeId: shape.id, page: nextPage, title: shape.props.title };
+}
+
 function PdfViewer({ shape, util }: { shape: PdfShape; util: PdfShapeUtil }) {
   const [isLoadingPage, setIsLoadingPage] = useState(false);
   const isEditing = util.editor.getEditingShapeId() === shape.id;
