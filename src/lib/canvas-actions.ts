@@ -1,12 +1,279 @@
 import {
+  createShapeId,
   type Editor,
+  type TLArrowShape,
+  type TLGeoShape,
   type TLShapeId,
+  type TLTextShape,
   sanitizeSvg,
+  toRichText,
 } from "tldraw";
 import {
   CODE_CELL_SHAPE_TYPE,
   type CodeCellShape,
 } from "@/shapes/code-cell-shape";
+
+export type LearningLabStageKey =
+  | "source"
+  | "question"
+  | "prediction"
+  | "test"
+  | "evidence"
+  | "reflection";
+
+type LearningLabOptions = {
+  topic: string;
+  source?: string;
+  question?: string;
+  prediction?: string;
+  test?: string;
+  evidence?: string;
+  reflection?: string;
+  point?: { x: number; y: number };
+};
+
+const LEARNING_LAB_LABELS: Record<LearningLabStageKey, string> = {
+  source: "SOURCE",
+  question: "QUESTION",
+  prediction: "PREDICTION",
+  test: "TEST",
+  evidence: "EVIDENCE",
+  reflection: "REFLECTION",
+};
+
+function learningLabText(stage: LearningLabStageKey, content: string) {
+  return `${LEARNING_LAB_LABELS[stage]}\n${content.trim().slice(0, 360)}`;
+}
+
+export function createLearningLab(editor: Editor, options: LearningLabOptions) {
+  const labId = `lab-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const nodeW = 220;
+  const nodeH = 112;
+  const gapX = 116;
+  const gapY = 112;
+  const labWidth = nodeW * 3 + gapX * 2;
+  const labHeight = nodeH * 2 + gapY;
+  const existingBounds = editor.getCurrentPageBounds();
+  const center =
+    options.point ??
+    (existingBounds
+      ? {
+          x: existingBounds.x + existingBounds.w + 140 + labWidth / 2,
+          y: existingBounds.y + existingBounds.h / 2,
+        }
+      : editor.getViewportPageBounds().center);
+  const startX = center.x - labWidth / 2;
+  const startY = center.y - labHeight / 2 + 24;
+  const titleId = createShapeId();
+
+  const stages: Array<{
+    key: LearningLabStageKey;
+    content: string;
+    color: TLGeoShape["props"]["color"];
+    x: number;
+    y: number;
+  }> = [
+    {
+      key: "source",
+      content: options.source ?? "Select a PDF, sketch, example, or claim.",
+      color: "grey",
+      x: startX,
+      y: startY,
+    },
+    {
+      key: "question",
+      content: options.question ?? "What are we trying to explain?",
+      color: "blue",
+      x: startX + nodeW + gapX,
+      y: startY,
+    },
+    {
+      key: "prediction",
+      content: options.prediction ?? "What will happen—and why?",
+      color: "orange",
+      x: startX + (nodeW + gapX) * 2,
+      y: startY,
+    },
+    {
+      key: "test",
+      content: options.test ?? "Run code, draw, or find a counterexample.",
+      color: "red",
+      x: startX + (nodeW + gapX) * 2,
+      y: startY + nodeH + gapY,
+    },
+    {
+      key: "evidence",
+      content: options.evidence ?? "What did we observe?",
+      color: "green",
+      x: startX + nodeW + gapX,
+      y: startY + nodeH + gapY,
+    },
+    {
+      key: "reflection",
+      content: options.reflection ?? "What changed? What should we test next?",
+      color: "violet",
+      x: startX,
+      y: startY + nodeH + gapY,
+    },
+  ];
+
+  const stageIds = Object.fromEntries(
+    stages.map((stage) => [stage.key, createShapeId()]),
+  ) as Record<LearningLabStageKey, TLShapeId>;
+  const arrowIds: TLShapeId[] = [];
+
+  const connections: Array<{
+    from: LearningLabStageKey;
+    to: LearningLabStageKey;
+    fromAnchor: { x: number; y: number };
+    toAnchor: { x: number; y: number };
+  }> = [
+    { from: "source", to: "question", fromAnchor: { x: 1, y: 0.5 }, toAnchor: { x: 0, y: 0.5 } },
+    { from: "question", to: "prediction", fromAnchor: { x: 1, y: 0.5 }, toAnchor: { x: 0, y: 0.5 } },
+    { from: "prediction", to: "test", fromAnchor: { x: 0.5, y: 1 }, toAnchor: { x: 0.5, y: 0 } },
+    { from: "test", to: "evidence", fromAnchor: { x: 0, y: 0.5 }, toAnchor: { x: 1, y: 0.5 } },
+    { from: "evidence", to: "reflection", fromAnchor: { x: 0, y: 0.5 }, toAnchor: { x: 1, y: 0.5 } },
+  ];
+
+  editor.markHistoryStoppingPoint("create learning lab");
+  editor.run(() => {
+    editor.createShape<TLTextShape>({
+      id: titleId,
+      type: "text",
+      x: startX,
+      y: startY - 74,
+      props: {
+        richText: toRichText(`LEARNING LAB  ·  ${options.topic.trim().slice(0, 120)}`),
+        color: "black",
+        font: "sans",
+        size: "m",
+      },
+      meta: { traceLabId: labId, traceLabRole: "title" },
+    });
+
+    for (const stage of stages) {
+      editor.createShape<TLGeoShape>({
+        id: stageIds[stage.key],
+        type: "geo",
+        x: stage.x,
+        y: stage.y,
+        props: {
+          geo: stage.key === "prediction" ? "cloud" : stage.key === "evidence" ? "oval" : "rectangle",
+          w: nodeW,
+          h: nodeH,
+          color: stage.color,
+          labelColor: "black",
+          fill: "semi",
+          dash: "draw",
+          size: "s",
+          font: "sans",
+          align: "start",
+          verticalAlign: "start",
+          richText: toRichText(learningLabText(stage.key, stage.content)),
+        },
+        meta: { traceLabId: labId, traceLabStage: stage.key },
+      });
+    }
+
+    for (const connection of connections) {
+      const from = stages.find((stage) => stage.key === connection.from)!;
+      const to = stages.find((stage) => stage.key === connection.to)!;
+      const fromPoint = {
+        x: from.x + nodeW * connection.fromAnchor.x,
+        y: from.y + nodeH * connection.fromAnchor.y,
+      };
+      const toPoint = {
+        x: to.x + nodeW * connection.toAnchor.x,
+        y: to.y + nodeH * connection.toAnchor.y,
+      };
+      const arrowId = createShapeId();
+      arrowIds.push(arrowId);
+      editor.createShape<TLArrowShape>({
+        id: arrowId,
+        type: "arrow",
+        x: fromPoint.x,
+        y: fromPoint.y,
+        props: {
+          start: { x: 0, y: 0 },
+          end: { x: toPoint.x - fromPoint.x, y: toPoint.y - fromPoint.y },
+          color: "grey",
+          dash: "draw",
+          size: "s",
+          arrowheadEnd: "arrow",
+        },
+        meta: { traceLabId: labId, traceLabRole: "connection" },
+      });
+      editor.createBindings([
+        {
+          type: "arrow",
+          fromId: arrowId,
+          toId: stageIds[connection.from],
+          props: {
+            terminal: "start",
+            normalizedAnchor: connection.fromAnchor,
+            isExact: false,
+            isPrecise: false,
+          },
+        },
+        {
+          type: "arrow",
+          fromId: arrowId,
+          toId: stageIds[connection.to],
+          props: {
+            terminal: "end",
+            normalizedAnchor: connection.toAnchor,
+            isExact: false,
+            isPrecise: false,
+          },
+        },
+      ]);
+    }
+  });
+
+  const createdIds = [titleId, ...Object.values(stageIds), ...arrowIds];
+  const createdShapes = createdIds
+    .map((id) => editor.getShape(id))
+    .filter((shape) => shape !== undefined);
+  editor.run(
+    () => {
+      for (const shape of createdShapes) {
+        editor.updateShape({ id: shape.id, type: shape.type, y: shape.y + 16, opacity: 0 });
+      }
+    },
+    { history: "ignore" },
+  );
+  editor.timers.requestAnimationFrame(() => {
+    for (const shape of createdShapes) {
+      editor.animateShape(
+        { id: shape.id, type: shape.type, y: shape.y, opacity: 1 },
+        { animation: { duration: 480, easing: (time) => 1 - Math.pow(1 - time, 3) } },
+      );
+    }
+    editor.zoomToBounds(
+      { x: startX - 42, y: startY - 92, w: labWidth + 84, h: labHeight + 146 },
+      { inset: 56, animation: { duration: 480 } },
+    );
+  });
+
+  return { labId, titleId, stageIds, arrowIds };
+}
+
+export function updateLearningLabStage(editor: Editor, shapeId: TLShapeId, content: string) {
+  const shape = editor.getShape<TLGeoShape>(shapeId);
+  const stage = shape?.meta.traceLabStage;
+  if (!shape || shape.type !== "geo" || typeof stage !== "string" || !(stage in LEARNING_LAB_LABELS)) {
+    return false;
+  }
+  editor.markHistoryStoppingPoint("update learning lab");
+  editor.updateShape<TLGeoShape>({
+    id: shape.id,
+    type: shape.type,
+    props: {
+      richText: toRichText(learningLabText(stage as LearningLabStageKey, content)),
+    },
+  });
+  return true;
+}
 
 export async function renderSvgVisual(
   editor: Editor,
@@ -250,6 +517,15 @@ export function serializeBoard(editor: Editor) {
             ? codeShape.meta.tracePrediction
             : "",
         predictionRevealed: codeShape.meta.tracePredictionRevealed === true,
+      };
+    }
+
+    if (shape.type === "geo" && typeof shape.meta.traceLabStage === "string") {
+      return {
+        ...base,
+        learningLabId:
+          typeof shape.meta.traceLabId === "string" ? shape.meta.traceLabId : "",
+        learningLabStage: shape.meta.traceLabStage,
       };
     }
 

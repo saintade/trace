@@ -18,8 +18,9 @@ Trace makes the whiteboard—not a transcript—the center of the lesson.
 2. Say: “Teach me gradient descent visually, then ask me to predict the next step.”
 3. Interrupt the professor or draw on the board; it sees the updated canvas on the next turn.
 4. Drop a PDF onto the board and ask for a page-grounded quiz.
-5. Add a code cell, edit it, run it, and ask the professor to explain the result.
-6. Say: “Make my Learning Trace from what I actually demonstrated.”
+5. Create a **Learning Lab** and fill the visible source → question → prediction → test → evidence → reflection loop with the professor.
+6. Add a code cell, edit it, run it, and ask the professor to explain the result.
+7. Say: “Make my Learning Trace from what I actually demonstrated.”
 
 ## What works
 
@@ -30,6 +31,7 @@ Trace makes the whiteboard—not a transcript—the center of the lesson.
 - GPT Image 2 generation for visual references where SVG is the wrong medium
 - Local PDF rendering and text indexing, with tools to list, search, and read bounded page ranges
 - “Show me the source” navigation that opens the exact cited PDF page and focuses it on the board
+- Editable Learning Labs that turn a source, question, prediction, test, evidence, and reflection into one connected investigation
 - Evidence-based Learning Traces with demonstrated understanding, revised misconceptions, and a next challenge
 - Borderless “living code ink” that runs Python, JavaScript, C17, or C++20 directly on the board
 - Prediction → observation comparisons pinned beside code before the professor explains the result
@@ -129,8 +131,9 @@ npm run build
 - **1:05–1:40 — Visual teaching:** generate a GPT‑5.6 explanation and show synchronized gestures.
 - **1:40–2:08 — Grounding:** drop a PDF, ask a question, then say “show me the source.”
 - **2:08–2:28 — Active practice:** edit and run an in-board code cell.
-- **2:28–2:45 — Evidence:** generate a Learning Trace from what the learner demonstrated.
-- **2:45–2:57 — Build:** name Codex, GPT‑5.6 Sol, Realtime, local-first data, and safety boundaries.
+- **2:28–2:42 — Learning Lab:** connect a prediction to a test and preserve the observed evidence.
+- **2:42–2:50 — Evidence:** generate a Learning Trace from what the learner demonstrated.
+- **2:50–2:57 — Build:** name Codex, GPT‑5.6 Sol, Realtime, local-first data, and safety boundaries.
 - **2:57–3:00 — Close:** “Trace turns an AI tutor into someone who can actually work beside you.”
 
 ## Licensing

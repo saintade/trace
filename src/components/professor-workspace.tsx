@@ -14,12 +14,14 @@ import {
   Redo2,
   Trash2,
   Undo2,
+  Workflow,
   X,
   type LucideIcon,
 } from "lucide-react";
 import { type Editor, Tldraw } from "tldraw";
 import { useVoiceProfessor } from "@/hooks/use-voice-professor";
 import { useLocalSessions } from "@/hooks/use-local-sessions";
+import { createLearningLab } from "@/lib/canvas-actions";
 import { importPdfToBoard } from "@/lib/pdf-actions";
 import { CodeCellShapeUtil, createCodeCell } from "@/shapes/code-cell-shape";
 import { PdfShapeUtil } from "@/shapes/pdf-shape";
@@ -100,6 +102,15 @@ export function ProfessorWorkspace() {
   function addCodeCell() {
     if (!editor) return;
     createCodeCell(editor);
+    if (localSessions.activeSessionId) {
+      setToolState({ sessionId: localSessions.activeSessionId, tool: "select" });
+    }
+    editor.setCurrentTool("select");
+  }
+
+  function addLearningLab() {
+    if (!editor) return;
+    createLearningLab(editor, { topic: "New investigation" });
     if (localSessions.activeSessionId) {
       setToolState({ sessionId: localSessions.activeSessionId, tool: "select" });
     }
@@ -204,8 +215,8 @@ export function ProfessorWorkspace() {
           <ul className="welcome-prompts" aria-label="Things to try">
             <li>Help me build an intuition for gradient descent.</li>
             <li>Quiz me from this PDF without giving away the answer.</li>
+            <li>Build a Learning Lab so I can test this idea.</li>
             <li>Let&apos;s trace this code together and test my prediction.</li>
-            <li>When we finish, make a Learning Trace from what I demonstrate.</li>
           </ul>
           <button
             type="button"
@@ -322,6 +333,15 @@ export function ProfessorWorkspace() {
           onClick={addCodeCell}
         >
           <Code2 size={18} strokeWidth={1.9} />
+        </button>
+        <button
+          type="button"
+          aria-label="Create Learning Lab"
+          title="Create Learning Lab"
+          className="minimal-tool-button"
+          onClick={addLearningLab}
+        >
+          <Workflow size={18} strokeWidth={1.9} />
         </button>
       </div>
 
