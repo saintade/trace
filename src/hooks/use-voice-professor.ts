@@ -12,14 +12,12 @@ import type { Editor as TldrawEditor, TLShapeId } from "tldraw";
 import {
   captureBoard,
   clearBoard,
-  createLearningLab,
   deleteBoardShapes,
   gestureAtBoardObject,
   insertGeneratedImage,
   renderSvgVisual,
   serializeBoard,
   startThinkingPulse,
-  updateLearningLabStage,
 } from "@/lib/canvas-actions";
 import {
   CODE_CELL_SHAPE_TYPE,
@@ -103,6 +101,8 @@ THE BOARD
   on screen; never invent a page number or claim a page supports something you have not read.
 - Draw only when a visual genuinely improves the explanation.
 - Never default to dashboards, cards, generic box grids, or repetitive flowcharts.
+- Default to clean free-form ink: an annotated drawing made directly on the board, with open strokes, nearby labels,
+  sparse leader lines, and one restrained accent. Never ask for a workflow of connected cards or labeled nodes.
 - Prefer the visual language that fits the idea: curves, annotated sketches, number lines, plots,
   spatial maps, timelines, freeform labels, worked equations, state traces, or realistic SVG illustration.
 - Use compose_visual for designed instructional visuals. Give it a precise teaching brief, purpose, and the
@@ -113,16 +113,6 @@ THE BOARD
   genuinely more useful than SVG. Prefer low quality for conversational speed unless the learner requests detail.
 - Compose the whole visual intentionally. Use whitespace and a restrained palette; make labels readable.
 - Use existing tldraw objects when the learner has already drawn something. Inspect before deleting.
-
-LEARNING LABS
-- A Learning Lab is an editable causal workspace inspired by visual computing: source → question → prediction →
-  test → evidence → reflection. Use create_learning_lab when a concept benefits from an investigation that will
-  evolve across several turns. Do not use it as a decorative flowchart or a substitute for a direct explanation.
-- Leave prediction, evidence, and reflection as prompts until the learner supplies them. Then call
-  update_learning_lab_stage with the exact stage ID returned by create_learning_lab and preserve the learner's words.
-- Treat each connection as meaning: the source grounds the question, the prediction commits before the test,
-  evidence comes from an observation, and reflection revises the model. Do not jump directly to the final box.
-- When a PDF or code cell is involved, keep it visible beside the lab and use the lab to show what role it plays.
 
 CODE
 - Code lives on the whiteboard in executable Python, JavaScript, C17, and C++20 cells, never in a separate panel.
@@ -353,54 +343,6 @@ export function useVoiceProfessor(options: UseVoiceProfessorOptions) {
       }),
       timeoutMs: 90_000,
       execute: async (request) => composeAndRenderVisual(request),
-    });
-
-    const createLearningLabTool = tool({
-      name: "create_learning_lab",
-      description:
-        "Create an editable connected investigation on the board: source, question, prediction, test, evidence, and reflection.",
-      parameters: z.object({
-        topic: z.string().min(1).max(160),
-        source: z.string().min(1).max(360).optional(),
-        question: z.string().min(1).max(360).optional(),
-        test: z.string().min(1).max(360).optional(),
-        x: z.number().optional(),
-        y: z.number().optional(),
-      }),
-      execute: async ({ topic, source, question, test, x, y }) => {
-        const editor = optionsRef.current.editor;
-        if (!editor) return "The board is not ready.";
-        const result = createLearningLab(editor, {
-          topic,
-          source,
-          question,
-          test,
-          point: x === undefined || y === undefined ? undefined : { x, y },
-        });
-        return JSON.stringify({
-          labId: result.labId,
-          stageIds: result.stageIds,
-          instruction:
-            "Update prediction, evidence, and reflection only after the learner supplies them.",
-        });
-      },
-    });
-
-    const updateLearningLabStageTool = tool({
-      name: "update_learning_lab_stage",
-      description:
-        "Write the learner's current contribution into one stage of an existing Learning Lab.",
-      parameters: z.object({
-        shapeId: z.string(),
-        content: z.string().min(1).max(360),
-      }),
-      execute: async ({ shapeId, content }) => {
-        const editor = optionsRef.current.editor;
-        if (!editor) return "The board is not ready.";
-        return updateLearningLabStage(editor, shapeId as TLShapeId, content)
-          ? `Updated Learning Lab stage ${shapeId}.`
-          : `No Learning Lab stage exists at ${shapeId}.`;
-      },
     });
 
     const learningTraceTool = tool({
@@ -649,8 +591,6 @@ export function useVoiceProfessor(options: UseVoiceProfessorOptions) {
         searchDocumentTool,
         readDocumentPagesTool,
         showDocumentPageTool,
-        createLearningLabTool,
-        updateLearningLabStageTool,
         composeVisualTool,
         learningTraceTool,
         misconceptionTrailTool,
@@ -670,7 +610,14 @@ export function useVoiceProfessor(options: UseVoiceProfessorOptions) {
     const editor = optionsRef.current.editor;
     if (editor) {
       const image = await captureBoard(editor);
-      if (image) session.addImage(image, { triggerResponse: false });
+      if (image) {
+        try {
+          session.addImage(image, { triggerResponse: false });
+        } catch {
+          // Keep the spoken turn alive if a browser negotiates an unusually small
+          // WebRTC data-channel message size. Document tools still provide grounding.
+        }
+      }
     }
     session.transport.sendEvent({ type: "response.create" });
   }

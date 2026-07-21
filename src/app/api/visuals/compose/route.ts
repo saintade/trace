@@ -10,23 +10,30 @@ Create one original SVG that makes the requested concept easier to understand on
 COMPOSITION
 - Choose the visual grammar from the subject, not from a generic template.
 - Begin with one visual thesis: the relationship, mechanism, transformation, or contrast the learner must see.
+- Default to a clean, free-form ink drawing: confident charcoal strokes, slightly imperfect construction lines,
+  handwritten-feeling annotations, and at most one warm accent. It should feel drawn directly on the board by an
+  excellent professor—not laid out by presentation software.
 - Prefer spatial explanation: annotated sketches, plotted relationships, cutaways, timelines, state traces,
   number lines, layered systems, realistic silhouettes, maps, visual metaphors, or worked transformations.
 - Never output a dashboard, UI mockup, nested cards, repeated rounded boxes, or a generic flowchart unless the
   request inherently requires that exact structure.
+- Never arrange an explanation as a workflow of labeled nodes and connector arrows. Put short labels beside the
+  thing they explain and use sparse ink leader lines, braces, underlines, motion marks, or trajectories instead.
 - Establish one focal point and a clear reading path. Use scale, overlap, proximity, and whitespace—not boxes—to group ideas.
 - Keep labels short, useful, and at least 20px at a 1200px-wide viewBox. Use no more than 14 visible text labels.
 - Use a restrained palette sampled from warm paper, charcoal ink, coral, moss, ochre, and slate. Avoid purple dominance.
 - Keep the root background transparent so the result belongs to the shared board. Add local fills only where contrast needs them.
 - Use a clear line-weight hierarchy: bold silhouette or main path, medium relationships, fine construction/detail lines.
-- Draw with paths and purposeful groups. Gentle hand-drawn irregularity is welcome; visual noise and decoration are not.
+- Draw primarily with open paths and purposeful groups. Vary line weight subtly and use rounded joins and caps.
+  Gentle hand-drawn irregularity is required; wobble should feel human but never messy.
 - Use gradients, patterns, masks, arrows, and subtle texture only when they carry meaning.
 - For code or algorithms, visualize state and change rather than pasting source code into the SVG.
 - For exercises, leave intentional blanks or prompts rather than revealing every answer.
 - Do not use emoji, stock UI icons, clip-art symbols, fake controls, legends that can be labeled directly, or ornamental blobs.
 
 VISUAL LANGUAGES
-- technical-sketch: precise ink, construction lines, dimension marks, callouts, and one coral emphasis.
+- technical-sketch: free-form charcoal ink, open construction lines, sparse leader notes, and one coral emphasis;
+  no panels, node diagrams, or closed containers unless they depict a real physical boundary.
 - scientific-illustration: recognizable form, cutaway or magnified detail, scale cues, and restrained labels.
 - data-graphic: honest axes or encodings, direct labels, purposeful comparison, and no decorative chart furniture.
 - spatial-map: position and distance carry meaning; use terrain, regions, routes, or topology rather than a node grid.
@@ -35,7 +42,7 @@ VISUAL LANGUAGES
 
 BOARD INTEGRATION
 - Read the supplied board image as an existing composition. Continue its direction, density, and scale.
-- Create a complementary object, not a poster placed on top of the board.
+- Create a complementary drawing, not a poster, worksheet, card, or diagram component placed on top of the board.
 - Leave breathing room near existing learner work and visually connect to it only when the brief calls for a relationship.
 - If the concept changes over time, show a before/after, trajectory, or state sequence with an unmistakable direction.
 

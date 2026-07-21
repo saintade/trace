@@ -30,8 +30,6 @@ On every spoken turn, the professor receives a fresh image of the board. It can 
 
 PDF textbooks remain local to the browser. Trace indexes their text locally, searches and reads bounded page ranges, and can physically open the exact cited page when the learner says “show me the source.” Borderless “living code ink” for Python, JavaScript, C17, and C++20 lives directly on the canvas. Before a meaningful run, the learner's spoken prediction is pinned beside the code; the observation is revealed only after execution so the professor can compare them before explaining.
 
-For deeper investigations, the professor can create a native, editable Learning Lab directly on the board. Its source → question → prediction → test → evidence → reflection loop makes causality visible: a PDF page or claim leads to a question, the learner commits to a prediction, code or a counterexample tests it, and the resulting evidence changes the learner's model. The professor can update individual stages without replacing the learner's workspace.
-
 When a learner revises an important idea, Trace can preserve the change as a consent-based Misconception Trail: original model, turning evidence, revised model, and a next transfer test. At the end of a meaningful lesson, it can create a Learning Trace with the goal, specific evidence the learner demonstrated, verified source pages, and one next challenge. It deliberately does not label passive listening as mastery.
 
 ## How we built it
@@ -40,7 +38,6 @@ When a learner revises an important idea, Trace can preserve the change as a con
 - **GPT‑5.6 Sol Responses API:** strict structured output for board-aware SVG explanations and evidence-based Learning Traces.
 - **GPT Image 2:** photographic or painterly references when vector explanation is the wrong medium.
 - **tldraw:** the shared spatial workspace, custom PDF and CodeMirror shapes, camera motion, and ephemeral professor gestures.
-- **Connected Learning Labs:** native tldraw nodes and bindings that remain movable and editable while the Realtime professor fills specific stages through bounded tools.
 - **PDF.js + IndexedDB:** local rendering, storage, and page-level text indexing without uploading textbook bytes to the application server.
 - **Web Workers + Pyodide + local sandboxing:** isolated JavaScript, Python, C17, and C++20 learning snippets.
 - **Next.js + SQLite FTS5:** server-only OpenAI credentials, session metadata, transcripts, and local search.
@@ -68,7 +65,6 @@ This commit boundary makes the pre-existing scaffold and the hackathon implement
 - The professor does not merely “see an uploaded file”; it can move the shared camera to the exact page it cites.
 - Spoken explanation can visibly track a generated diagram through ordered, animated teaching beats.
 - Code is not pasted into chat. It remains editable, runnable shared work on the board.
-- Learning Labs turn a lesson into a visible investigation rather than a hidden chain of prompts.
 - Learning progress is described through predictions, revisions, observed evidence, and next tests—not engagement metrics or invented mastery scores.
 - The core whiteboard and document library are local-first and usable without creating an account.
 
@@ -92,8 +88,7 @@ We also learned that a compelling explanation is not evidence of learning. Learn
 3. Interrupt once and draw on the board before answering.
 4. Drop a non-sensitive PDF, ask a question about it, then say: “Show me the source.”
 5. Add and run a code cell, then ask the professor to explain the output.
-6. Say: “Build a Learning Lab for this idea,” then make a prediction before asking it to update the evidence.
-7. Say: “Make my Learning Trace from what I actually demonstrated.”
+6. Say: “Make my Learning Trace from what I actually demonstrated.”
 
 PDFs and canvases are stored on the testing device. Native C/C++ execution is a trusted-local macOS feature; use Python or JavaScript in a hosted demo.
 
@@ -106,6 +101,6 @@ PDFs and canvases are stored on the testing device. Native C/C++ execution is a 
 - [ ] Record a public YouTube demo under three minutes with clear audio.
 - [ ] Explicitly explain how Codex and GPT‑5.6 were used.
 - [ ] Show the live product before architecture slides.
-- [ ] Add 3–5 strong screenshots, including a Learning Lab, exact PDF source page, runnable code, and Learning Trace.
+- [ ] Add 3–5 strong screenshots, including a visual lesson, exact PDF source page, runnable code, and Learning Trace.
 - [ ] Confirm the repository is public and the MIT license is visible.
 - [ ] Submit before **July 21, 2026 at 5:00 PM Pacific**.
