@@ -245,6 +245,11 @@ export function serializeBoard(editor: Editor) {
         language: codeShape.props.language,
         output: codeShape.props.output,
         error: codeShape.props.error,
+        prediction:
+          typeof codeShape.meta.tracePrediction === "string"
+            ? codeShape.meta.tracePrediction
+            : "",
+        predictionRevealed: codeShape.meta.tracePredictionRevealed === true,
       };
     }
 

@@ -24,6 +24,7 @@ import {
   type CodeCellShape,
   createCodeCell,
   runCodeCell,
+  setCodePrediction,
 } from "@/shapes/code-cell-shape";
 import {
   listLocalPdfDocuments,
@@ -117,7 +118,9 @@ CODE
   not standalone requests. Use that state naturally when the learner speaks.
 - Create a code cell when code is useful or requested. The learner can edit and run it directly.
 - Update learner code only when asked or when they agree to a concrete change.
-- Run code to test a prediction, then discuss the result verbally.
+- When a run has a useful non-obvious outcome, ask the learner to predict it first. After they answer,
+  call record_code_prediction with their words before run_code_cell. Do not invent or improve their prediction.
+- After the run, compare prediction and observation and ask for a causal explanation before correcting them.
 
 LEARNING EVIDENCE
 - Do not equate listening, confidence, or completing a lesson with understanding. Look for evidence in the
@@ -126,6 +129,8 @@ LEARNING EVIDENCE
 - When the learner asks to wrap up, offer to create a Learning Trace. Only call create_learning_trace after they agree.
 - The trace must name the goal, specific demonstrated evidence, any misconception that changed, and one next challenge.
 - Never claim mastery without evidence. Use language such as "you demonstrated" and "next test" instead.
+- When the learner explicitly revises an important mental model, offer to preserve the change as a Misconception Trail.
+  Only call create_misconception_trail after they agree, and preserve their original and revised ideas without ridicule.
 `.trim();
 
 export function useVoiceProfessor(options: UseVoiceProfessorOptions) {
@@ -385,6 +390,33 @@ export function useVoiceProfessor(options: UseVoiceProfessorOptions) {
         }),
     });
 
+    const misconceptionTrailTool = tool({
+      name: "create_misconception_trail",
+      description:
+        "Preserve an agreed before-evidence-after visual of how the learner revised an important mental model.",
+      parameters: z.object({
+        originalModel: z.string().min(1).max(420),
+        turningEvidence: z.string().min(1).max(420),
+        revisedModel: z.string().min(1).max(420),
+        nextTest: z.string().min(1).max(320),
+      }),
+      timeoutMs: 90_000,
+      execute: async ({ originalModel, turningEvidence, revisedModel, nextTest }) =>
+        composeAndRenderVisual({
+          purpose: "compare",
+          style: "technical-sketch",
+          aspect: "landscape",
+          brief: [
+            "Create a Misconception Trail that respectfully preserves a learner's conceptual revision.",
+            `Original model, in the learner's terms: ${originalModel}`,
+            `Turning evidence or counterexample: ${turningEvidence}`,
+            `Revised model: ${revisedModel}`,
+            `Next transfer test: ${nextTest}`,
+            "Use a spatial before → evidence → after progression. Keep the original visible but lighter; do not use a red X, failure badge, score, or shaming language. Make the evidence the visual pivot.",
+          ].join("\n"),
+        }),
+    });
+
     const gestureTool = tool({
       name: "gesture_at_object",
       description:
@@ -484,6 +516,11 @@ export function useVoiceProfessor(options: UseVoiceProfessorOptions) {
           id: shape.id,
           type: shape.type,
           props: { code, language: language ?? shape.props.language, output: "", error: "" },
+          meta: {
+            ...shape.meta,
+            tracePrediction: "",
+            tracePredictionRevealed: false,
+          },
         });
         return `Updated code cell ${shape.id}.`;
       },
@@ -498,6 +535,23 @@ export function useVoiceProfessor(options: UseVoiceProfessorOptions) {
         if (!editor) return "The board is not ready.";
         const result = await runCodeCell(editor, shapeId as TLShapeId);
         return result ? JSON.stringify(result) : `No code cell exists at ${shapeId}.`;
+      },
+    });
+
+    const recordCodePredictionTool = tool({
+      name: "record_code_prediction",
+      description:
+        "Pin the learner's spoken prediction beside a code cell before running it. Preserve their wording.",
+      parameters: z.object({
+        shapeId: z.string(),
+        learnerPrediction: z.string().min(1).max(500),
+      }),
+      execute: async ({ shapeId, learnerPrediction }) => {
+        const editor = optionsRef.current.editor;
+        if (!editor) return "The board is not ready.";
+        return setCodePrediction(editor, shapeId as TLShapeId, learnerPrediction)
+          ? `Recorded the learner's prediction beside ${shapeId}.`
+          : `No code cell exists at ${shapeId}.`;
       },
     });
 
@@ -537,10 +591,12 @@ export function useVoiceProfessor(options: UseVoiceProfessorOptions) {
         showDocumentPageTool,
         composeVisualTool,
         learningTraceTool,
+        misconceptionTrailTool,
         gestureTool,
         generateImageTool,
         createCodeTool,
         updateCodeTool,
+        recordCodePredictionTool,
         runCodeTool,
         deleteTool,
         clearTool,

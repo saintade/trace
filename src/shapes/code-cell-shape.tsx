@@ -40,6 +40,36 @@ declare module "tldraw" {
 
 export type CodeCellShape = TLShape<typeof CODE_CELL_SHAPE_TYPE>;
 
+type CodeLearningMeta = {
+  prediction: string;
+  revealed: boolean;
+};
+
+function getCodeLearningMeta(shape: CodeCellShape): CodeLearningMeta {
+  return {
+    prediction:
+      typeof shape.meta.tracePrediction === "string" ? shape.meta.tracePrediction : "",
+    revealed: shape.meta.tracePredictionRevealed === true,
+  };
+}
+
+export function setCodePrediction(editor: Editor, shapeId: TLShapeId, prediction: string) {
+  const shape = editor.getShape<CodeCellShape>(shapeId);
+  if (!shape || shape.type !== CODE_CELL_SHAPE_TYPE) return false;
+  editor.markHistoryStoppingPoint("record code prediction");
+  editor.updateShape<CodeCellShape>({
+    id: shape.id,
+    type: shape.type,
+    props: { h: Math.max(shape.props.h, 320) },
+    meta: {
+      ...shape.meta,
+      tracePrediction: prediction.trim().slice(0, 500),
+      tracePredictionRevealed: false,
+    },
+  });
+  return true;
+}
+
 function languageLabel(language: CodeLanguage) {
   if (language === "python") return "Python";
   if (language === "javascript") return "JavaScript";
@@ -64,8 +94,8 @@ const inlineCodeTheme = EditorView.theme({
   "&": {
     height: "100%",
     color: "#343936",
-    backgroundColor: "#f7f6f2",
-    fontSize: "12px",
+    backgroundColor: "transparent",
+    fontSize: "13px",
   },
   "&.cm-focused": { outline: "none" },
   ".cm-scroller": {
@@ -77,7 +107,7 @@ const inlineCodeTheme = EditorView.theme({
   ".cm-line": { padding: "0 14px 0 8px" },
   ".cm-gutters": {
     color: "#a5aaa6",
-    backgroundColor: "#f7f6f2",
+    backgroundColor: "transparent",
     border: "none",
   },
   ".cm-lineNumbers .cm-gutterElement": { padding: "0 7px 0 10px" },
@@ -161,6 +191,10 @@ export async function runCodeCell(editor: Editor, shapeId: TLShapeId) {
       error: result.error ?? "",
       h: Math.max(shape.props.h, 320),
     },
+    meta: {
+      ...shape.meta,
+      tracePredictionRevealed: Boolean(getCodeLearningMeta(shape).prediction),
+    },
   });
   publishCodeActivity({
     shapeId: shape.id,
@@ -176,6 +210,7 @@ export async function runCodeCell(editor: Editor, shapeId: TLShapeId) {
 function CodeCell({ shape, util }: { shape: CodeCellShape; util: CodeCellShapeUtil }) {
   const [isRunning, setIsRunning] = useState(false);
   const isEditing = util.editor.getEditingShapeId() === shape.id;
+  const learning = getCodeLearningMeta(shape);
 
   const updateProps = useCallback((props: Partial<CodeCellShape["props"]>) => {
     util.editor.updateShape({
@@ -212,13 +247,24 @@ function CodeCell({ shape, util }: { shape: CodeCellShape; util: CodeCellShapeUt
 
   const updateCode = useCallback((code: string) => {
     updateProps({ code });
+    if (learning.prediction) {
+      util.editor.updateShape<CodeCellShape>({
+        id: shape.id,
+        type: shape.type,
+        meta: {
+          ...shape.meta,
+          tracePrediction: "",
+          tracePredictionRevealed: false,
+        },
+      });
+    }
     publishCodeActivity({
       shapeId: shape.id,
       language: shape.props.language,
       code,
       phase: "edit",
     });
-  }, [shape.id, shape.props.language, updateProps]);
+  }, [learning.prediction, shape.id, shape.meta, shape.props.language, shape.type, updateProps, util.editor]);
 
   function removeCodeCell() {
     util.editor.markHistoryStoppingPoint("remove code cell");
@@ -246,6 +292,15 @@ function CodeCell({ shape, util }: { shape: CodeCellShape; util: CodeCellShapeUt
             onChange={(event) => {
               const language = event.target.value as CodeLanguage;
               updateProps({ language });
+              util.editor.updateShape<CodeCellShape>({
+                id: shape.id,
+                type: shape.type,
+                meta: {
+                  ...shape.meta,
+                  tracePrediction: "",
+                  tracePredictionRevealed: false,
+                },
+              });
               publishCodeActivity({
                 shapeId: shape.id,
                 language,
@@ -319,15 +374,43 @@ function CodeCell({ shape, util }: { shape: CodeCellShape; util: CodeCellShapeUt
         readOnly={!isEditing}
         value={shape.props.code}
       />
+      {learning.prediction ? (
+        <div className={`trace-code-prediction ${learning.revealed ? "trace-code-prediction-revealed" : ""}`}>
+          <div>
+            <span>Prediction</span>
+            <p>{learning.prediction}</p>
+          </div>
+          <strong aria-hidden="true">→</strong>
+          <div>
+            <span>Observation</span>
+            <p>
+              {learning.revealed
+                ? shape.props.error || shape.props.output || "No visible output"
+                : "Run to reveal"}
+            </p>
+          </div>
+        </div>
+      ) : null}
       {(shape.props.output || shape.props.error) && (
         <div className="trace-code-output-panel">
           <div className="trace-code-output-header">
-            <span>{shape.props.error ? "Error" : "Output"}</span>
+            <span>{shape.props.error ? "Error" : "Result"}</span>
             <button
               type="button"
               aria-label="Clear output"
               title="Clear output"
-              onClick={() => updateProps({ output: "", error: "" })}
+              onClick={() => {
+                updateProps({ output: "", error: "" });
+                util.editor.updateShape<CodeCellShape>({
+                  id: shape.id,
+                  type: shape.type,
+                  meta: {
+                    ...shape.meta,
+                    tracePrediction: "",
+                    tracePredictionRevealed: false,
+                  },
+                });
+              }}
             >
               <X size={12} aria-hidden="true" />
             </button>
@@ -379,25 +462,36 @@ export class CodeCellShapeUtil extends BaseBoxShapeUtil<CodeCellShape> {
   override toSvg(shape: CodeCellShape) {
     const codeLines = shape.props.code.split("\n").slice(0, 14);
     const output = shape.props.error || shape.props.output;
+    const learning = getCodeLearningMeta(shape);
 
     return (
       <g>
-        <rect width={shape.props.w} height={shape.props.h} rx={8} fill="#f7f6f2" />
-        <rect width={shape.props.w} height={32} rx={8} fill="#ecebe6" />
-        <text x={12} y={21} fill="#737975" fontFamily="monospace" fontSize={10}>
+        <rect width={shape.props.w} height={shape.props.h} rx={10} fill="#fffef9" fillOpacity={0.82} />
+        <rect x={0} y={4} width={3} height={shape.props.h - 8} rx={2} fill="#dc6248" />
+        <text x={14} y={20} fill="#737975" fontFamily="monospace" fontSize={10}>
           {languageLabel(shape.props.language)}
         </text>
-        <text x={16} y={52} fill="#343936" fontFamily="monospace" fontSize={11}>
+        <text x={18} y={48} fill="#343936" fontFamily="monospace" fontSize={12}>
           {codeLines.map((line, index) => (
-            <tspan key={index} x={16} dy={index === 0 ? 0 : 17}>
+            <tspan key={index} x={18} dy={index === 0 ? 0 : 18}>
               {line || " "}
             </tspan>
           ))}
         </text>
+        {learning.prediction ? (
+          <g>
+            <text x={18} y={shape.props.h - 48} fill="#a74432" fontFamily="sans-serif" fontSize={9}>
+              PREDICTION
+            </text>
+            <text x={18} y={shape.props.h - 31} fill="#555c58" fontFamily="sans-serif" fontSize={10}>
+              {learning.prediction.slice(0, 74)}
+            </text>
+          </g>
+        ) : null}
         {output ? (
           <text
-            x={16}
-            y={shape.props.h - 22}
+            x={18}
+            y={shape.props.h - 12}
             fill={shape.props.error ? "#a74432" : "#39704f"}
             fontFamily="monospace"
             fontSize={10}

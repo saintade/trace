@@ -9,16 +9,35 @@ Create one original SVG that makes the requested concept easier to understand on
 
 COMPOSITION
 - Choose the visual grammar from the subject, not from a generic template.
+- Begin with one visual thesis: the relationship, mechanism, transformation, or contrast the learner must see.
 - Prefer spatial explanation: annotated sketches, plotted relationships, cutaways, timelines, state traces,
   number lines, layered systems, realistic silhouettes, maps, visual metaphors, or worked transformations.
 - Never output a dashboard, UI mockup, nested cards, repeated rounded boxes, or a generic flowchart unless the
   request inherently requires that exact structure.
-- Establish one focal point and a clear reading path. Use generous whitespace and 6-10% outer margins.
-- Keep labels short, useful, and at least 18px at a 1200px-wide viewBox. Do not fill the visual with prose.
-- Use a restrained palette with strong contrast on a warm white background. Avoid purple-dominated palettes.
-- Draw with paths and groups. Use gradients, patterns, masks, filters, arrows, and subtle texture only when useful.
+- Establish one focal point and a clear reading path. Use scale, overlap, proximity, and whitespace—not boxes—to group ideas.
+- Keep labels short, useful, and at least 20px at a 1200px-wide viewBox. Use no more than 14 visible text labels.
+- Use a restrained palette sampled from warm paper, charcoal ink, coral, moss, ochre, and slate. Avoid purple dominance.
+- Keep the root background transparent so the result belongs to the shared board. Add local fills only where contrast needs them.
+- Use a clear line-weight hierarchy: bold silhouette or main path, medium relationships, fine construction/detail lines.
+- Draw with paths and purposeful groups. Gentle hand-drawn irregularity is welcome; visual noise and decoration are not.
+- Use gradients, patterns, masks, arrows, and subtle texture only when they carry meaning.
 - For code or algorithms, visualize state and change rather than pasting source code into the SVG.
 - For exercises, leave intentional blanks or prompts rather than revealing every answer.
+- Do not use emoji, stock UI icons, clip-art symbols, fake controls, legends that can be labeled directly, or ornamental blobs.
+
+VISUAL LANGUAGES
+- technical-sketch: precise ink, construction lines, dimension marks, callouts, and one coral emphasis.
+- scientific-illustration: recognizable form, cutaway or magnified detail, scale cues, and restrained labels.
+- data-graphic: honest axes or encodings, direct labels, purposeful comparison, and no decorative chart furniture.
+- spatial-map: position and distance carry meaning; use terrain, regions, routes, or topology rather than a node grid.
+- chalkboard: energetic strokes and worked transformations, but retain warm-paper contrast instead of a dark rectangle.
+- editorial-illustration: one strong metaphor or scene with a clear conceptual mapping and minimal text.
+
+BOARD INTEGRATION
+- Read the supplied board image as an existing composition. Continue its direction, density, and scale.
+- Create a complementary object, not a poster placed on top of the board.
+- Leave breathing room near existing learner work and visually connect to it only when the brief calls for a relationship.
+- If the concept changes over time, show a before/after, trajectory, or state sequence with an unmistakable direction.
 
 SVG CONTRACT
 - Return a complete root <svg> with xmlns, width, height, and matching viewBox.
@@ -36,6 +55,11 @@ LEARNING TRACES
 - When purpose is reflect, visualize a journey from goal through demonstrated evidence to the next challenge.
 - Make observed evidence visually distinct from claims that remain to be tested.
 - Preserve supplied source page numbers exactly. Never invent mastery, evidence, misconceptions, or citations.
+
+MISCONCEPTION TRAILS
+- Show original model → turning evidence → revised model as one readable spatial transformation.
+- Keep the original idea visible but lighter. Emphasize the evidence as the pivot and the revised model as current.
+- Never use shaming red X marks, failure badges, scores, or language that treats revision as failure.
 `.trim();
 
 type RequestBody = {

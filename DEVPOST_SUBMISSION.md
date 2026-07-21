@@ -28,9 +28,9 @@ Trace is a voice-first professor on an infinite shared whiteboard. There is no p
 
 On every spoken turn, the professor receives a fresh image of the board. It can respond naturally through OpenAI Realtime, compose an original visual explanation with GPT‑5.6 Sol, and point, circle, or underline the relevant part while speaking. Learners can interrupt at any time.
 
-PDF textbooks remain local to the browser. Trace indexes their text locally, searches and reads bounded page ranges, and can physically open the exact cited page when the learner says “show me the source.” Runnable Python, JavaScript, C17, and C++20 cells live directly on the canvas so the learner and professor can predict, test, and discuss results together.
+PDF textbooks remain local to the browser. Trace indexes their text locally, searches and reads bounded page ranges, and can physically open the exact cited page when the learner says “show me the source.” Borderless “living code ink” for Python, JavaScript, C17, and C++20 lives directly on the canvas. Before a meaningful run, the learner's spoken prediction is pinned beside the code; the observation is revealed only after execution so the professor can compare them before explaining.
 
-At the end of a meaningful lesson, Trace can create a Learning Trace: a visual record of the goal, specific evidence the learner demonstrated, a misconception that changed, verified source pages, and one next challenge. It deliberately does not label passive listening as mastery.
+When a learner revises an important idea, Trace can preserve the change as a consent-based Misconception Trail: original model, turning evidence, revised model, and a next transfer test. At the end of a meaningful lesson, it can create a Learning Trace with the goal, specific evidence the learner demonstrated, verified source pages, and one next challenge. It deliberately does not label passive listening as mastery.
 
 ## How we built it
 
@@ -65,7 +65,7 @@ This commit boundary makes the pre-existing scaffold and the hackathon implement
 - The professor does not merely “see an uploaded file”; it can move the shared camera to the exact page it cites.
 - Spoken explanation can visibly track a generated diagram through ordered, animated teaching beats.
 - Code is not pasted into chat. It remains editable, runnable shared work on the board.
-- Learning progress is described through observed evidence and next tests, not engagement metrics or invented mastery scores.
+- Learning progress is described through predictions, revisions, observed evidence, and next tests—not engagement metrics or invented mastery scores.
 - The core whiteboard and document library are local-first and usable without creating an account.
 
 ## What we learned

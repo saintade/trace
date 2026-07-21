@@ -31,7 +31,9 @@ Trace makes the whiteboard—not a transcript—the center of the lesson.
 - Local PDF rendering and text indexing, with tools to list, search, and read bounded page ranges
 - “Show me the source” navigation that opens the exact cited PDF page and focuses it on the board
 - Evidence-based Learning Traces with demonstrated understanding, revised misconceptions, and a next challenge
-- Editable CodeMirror cells that run Python, JavaScript, C17, or C++20 directly on the board
+- Borderless “living code ink” that runs Python, JavaScript, C17, or C++20 directly on the board
+- Prediction → observation comparisons pinned beside code before the professor explains the result
+- Consent-based Misconception Trails that preserve original model, turning evidence, and revised understanding
 - Multiple tutoring sessions with isolated boards, local transcript storage, and SQLite FTS5 search
 - Native drag-and-drop for images, SVG, files, URLs, and text
 - Responsive UI, keyboard focus states, reduced-motion support, and a first-run guide
